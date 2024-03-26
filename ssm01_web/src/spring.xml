@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/aop
+        https://www.springframework.org/schema/aop/spring-aop.xsd
+        http://www.springframework.org/schema/mvc
+        https://www.springframework.org/schema/mvc/spring-mvc.xsd
+        http://www.springframework.org/schema/context
+        https://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/tx
+        https://www.springframework.org/schema/tx/spring-tx.xsd
+        http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd">
+    <!--spring容器相关配置-->
+
+
+    <!--告诉spring这些包中的类需要管理IOC-->
+    <context:component-scan base-package="com.duyi.controller,com.duyi.service,com.duyi.dao"></context:component-scan>
+    <!--管理apache数据源-->
+    <bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close">
+        <!--数据库连接信息-->
+        <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+        <property name="url" value="jdbc:mysql://localhost:3306/test_ssm?characterEncoding=utf-8" />
+        <property name="username" value="wtc" />
+        <property name="password" value="52mq" />
+        <!--数据库管理信息-->
+        <property name="maxTotal" value="100" />
+        <property name="minIdle" value="5" />
+    </bean>
+    <!--管理mybatis工厂创建-->
+    <bean id="sessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="configLocation" value="classpath:mybatis-config.xml"></property>
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+
+    <!--配置事务管理者-->
+    <bean id="manager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <!-- 设置事务管理策略 -->
+    <tx:advice id="advice" transaction-manager="manager">
+        <tx:attributes>
+            <!-- 所有save的方法启动事物，事物隔离级别为READ_COMMITTED
+            REQUIRED含义：调用A方法时开启一个事物，A又调用B方法时，两者时一个事物-->
+            <tx:method name="save*" isolation="READ_COMMITTED" propagation="REQUIRED"/>
+            <!--调用add开头的方法时，按照以下策略执行-->
+            <tx:method name="add*" isolation="READ_COMMITTED" propagation="REQUIRED"/>
+            <tx:method name="delete*" isolation="READ_COMMITTED" propagation="REQUIRED"/>
+            <tx:method name="update*" isolation="READ_COMMITTED" propagation="REQUIRED"/>
+            <tx:method name="select*" isolation="READ_COMMITTED" propagation="REQUIRED"/>
+            <!--剩下得方法只能只读，否则报错或失效-->
+            <tx:method name="*" read-only="true" />
+        </tx:attributes>
+    </tx:advice>
+
+    <!--设置事物管理切入点AOP-->
+    <aop:config>
+
+<!--        <aop:advisor advice-ref="advice" pointcut="execution(* com.com.duyi.service.*.*(..))"/>-->
+        <aop:pointcut id="pointcut" expression="execution(* com.duyi.service.*.*(..))"/>
+        <aop:advisor advice-ref="advice" pointcut-ref="pointcut" />
+    </aop:config>
+</beans>
